@@ -6,6 +6,10 @@ import (
 	"unsafe"
 )
 
+type Func struct {
+	f string
+}
+
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const (
 	letterIdxBits = 6                    // 6 bits to represent a letter index
@@ -16,7 +20,8 @@ const (
 
 var src = rand.NewSource(time.Now().UnixNano())
 
-func Str(length int) string {
+func (fun *Func) Str(length int) string {
+
 	b := make([]byte, length)
 	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
 	for i, cache, remain := length-1, src.Int63(), letterIdxMax; i >= 0; {
@@ -34,7 +39,7 @@ func Str(length int) string {
 }
 
 // FormatDate format传需要格式化的的格式，t传时间 不传的话默认格式化当前
-func FormatDate(format string, t string) (string, error) {
+func (fun *Func) FormatDate(format string, t string) (string, error) {
 	if t == "" {
 		return time.Now().Format(format), nil
 	} else {
@@ -46,19 +51,19 @@ func FormatDate(format string, t string) (string, error) {
 	}
 }
 
-func FormatNow2YYYYMMDD() string {
+func (fun *Func) FormatNow2YYYYMMDD() string {
 	return time.Now().Format(standTime)
 }
 
-func FormatYYYYMMDDNowDateAdd(year, month, day int) string {
+func (fun *Func) FormatYYYYMMDDNowDateAdd(year, month, day int) string {
 	return time.Now().AddDate(year, month, day).Format(standTime)
 }
 
-func FormatNowDateAdd2(format string, year, month, day int) string {
+func (fun *Func) FormatNowDateAdd2(format string, year, month, day int) string {
 	return time.Now().AddDate(year, month, day).Format(format)
 }
 
-func FormatDateAdd(t, f string, n int) (string, error) {
+func (fun *Func) FormatDateAdd(t, f string, n int) (string, error) {
 	_, err := time.ParseInLocation(f, t, time.Local)
 	if err != nil {
 		return "", err

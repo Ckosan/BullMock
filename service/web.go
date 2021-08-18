@@ -2,6 +2,7 @@ package service
 
 import (
 	"BullMock/parse"
+	"BullMock/utils"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -63,7 +64,8 @@ func Accept(w http.ResponseWriter, req *http.Request) {
 	mockInfo := parse.MockCollect[key]
 
 	if !mockInfo.Status {
-		// todo 走真实请求 并返回
+		// 走真实请求 并返回
+		utils.DoHttp(req, w)
 		return
 	}
 
@@ -73,9 +75,5 @@ func Accept(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.Write([]byte("未在mock系统定义返回"))
-
-}
-
-func EveryHandler() http.Handler {
-	return http.HandlerFunc(Accept)
+	return
 }

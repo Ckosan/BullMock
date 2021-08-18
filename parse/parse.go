@@ -15,7 +15,7 @@ const (
 	TextPlain             = "text/plain"
 	ApplicationXml        = "application/xml"
 	regMatch              = "\\{\\{.*\\}\\}"
-	regFunc               = "\\${.*}"
+	regFunc               = "\\$.*\\)"
 )
 
 type Parse interface {
@@ -40,6 +40,11 @@ type MockInfo struct {
 	RespTemplate    interface{}
 	MockRule        string
 	RespContentType string
+	Expressions     []*Expression
+}
+
+type Expression struct {
+	valueExp, funcExp, ruleExp string
 }
 
 var MockCollect = make(map[string]*MockInfo, 16)
@@ -63,11 +68,18 @@ func (instance *MockInstance) AddMock(mocInfo *MockInfo) error {
 	}
 	if instance.RespContentType == ApplicationJson {
 		respMap, ok := instance.Response.(map[string]interface{})
+		var exps = make([]*Expression, 16, 16)
 		if ok {
+			i := 0
 			for _, v := range respMap {
-				findExpression(v)
-				findFunction(v)
+				exp := &Expression{}
+				findValueExpression(v, exp)
+				findFunctionExpression(v, exp)
+				exps[i] = exp
+				i++
 			}
+			mocInfo.RespTemplate = respMap
+			mocInfo.Expressions = exps
 		}
 
 	}
@@ -84,36 +96,44 @@ func (instance *MockInstance) ParseUrl() error {
 	return nil
 }
 
-func findExpression(val interface{}) interface{} {
+func findValueExpression(val interface{}, exp *Expression) interface{} {
 	if reflect.TypeOf(val).Name() == "string" {
 		valStr := val.(string)
 		reg := regexp.MustCompile(regMatch)
 		if reg.MatchString(valStr) {
 			ret := reg.Find([]byte(valStr))
 			express := ret[2 : len(ret)-2]
+			exp.valueExp = string(express[:])
 			return string(express[:])
 		}
 	}
 	return val
 }
 
-func findFunction(val interface{}) interface{} {
+func findFunctionExpression(val interface{}, exp *Expression) interface{} {
 	if reflect.TypeOf(val).Name() == "string" {
 		valStr := val.(string)
 		reg := regexp.MustCompile(regFunc)
 		if reg.MatchString(valStr) {
 			ret := reg.Find([]byte(valStr))
-			express := ret[2 : len(ret)-3]
+			express := ret[1 : len(ret)-2]
+			exp.funcExp = string(express[:])
 			return string(express[:])
 		}
 	}
 	return val
 }
 
-//	parseRuleValue 使用jsonPath 格式 如 $.request.name=='Pierson' json字段匹配
+//	findRuleValue 使用jsonPath 格式 如 $.request.name=='Pierson' json字段匹配
 // 	$.fromKey.name== 'Pierson'   表单name字段为Pierson
 //	$.header.Cookie=='uu=svn' 	 header里面Cookie的匹配
 //	$.urlPath=='/v1/get-info'    urlPath匹配
-func parseRuleValue(s string) {
+func findRuleValue(s string) {
+
+}
+
+var FuncCollect = make(map[string]interface{}, 16)
+
+func loadFunc() {
 
 }
