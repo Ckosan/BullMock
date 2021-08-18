@@ -65,13 +65,22 @@ func Accept(w http.ResponseWriter, req *http.Request) {
 
 	if !mockInfo.Status {
 		// 走真实请求 并返回
-		utils.DoHttp(req, w)
+		err, resp := utils.DoHttp(req)
+		if err != nil {
+			bytes, _ := ioutil.ReadAll(resp.Body)
+			for k, v := range resp.Header {
+				w.Header().Set(k, v[0])
+			}
+			w.Write(bytes)
+		} else {
+			w.Write([]byte(err.Error()))
+		}
 		return
 	}
 
 	if nil != mockInfo {
 		w.Header().Set("Content-Type", mockInfo.RespContentType)
-		w.Write([]byte(ReturnData(mockInfo.RespTemplate, req, bodyBytes)))
+		w.Write([]byte(ReturnData(mockInfo, req, bodyBytes)))
 		return
 	}
 	w.Write([]byte("未在mock系统定义返回"))

@@ -2,7 +2,6 @@ package utils
 
 import (
 	"crypto/tls"
-	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -12,7 +11,7 @@ const (
 	HTTP  = "http"
 )
 
-func DoHttp(req *http.Request, w http.ResponseWriter) {
+func DoHttp(req *http.Request) (error, *http.Response) {
 	var (
 		response *http.Response
 		err      error
@@ -30,15 +29,9 @@ func DoHttp(req *http.Request, w http.ResponseWriter) {
 	}()
 
 	if err != nil {
-		w.Write([]byte(err.Error()))
-		return
+		return err, nil
 	}
-	for k, v := range response.Header {
-		w.Header().Set(k, v[0])
-	}
-	bytes, _ := ioutil.ReadAll(req.Body)
-	w.Write(bytes)
-
+	return nil, response
 }
 
 func httpReq(req *http.Request) (*http.Response, error) {
