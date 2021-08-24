@@ -7,7 +7,7 @@ import (
 )
 
 type Func struct {
-	f string
+	F string
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

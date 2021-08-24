@@ -3,12 +3,11 @@ package utils
 import (
 	"crypto/tls"
 	"net/http"
-	"strings"
 )
 
 const (
-	HTTPS = "https"
-	HTTP  = "http"
+	HTTPS = "https://"
+	HTTP  = "http://"
 )
 
 func DoHttp(req *http.Request) (error, *http.Response) {
@@ -16,7 +15,8 @@ func DoHttp(req *http.Request) (error, *http.Response) {
 		response *http.Response
 		err      error
 	)
-	if strings.HasPrefix(strings.ToLower(req.URL.Scheme[:3]), HTTPS) {
+
+	if req.TLS != nil {
 		response, err = httpsReq(req)
 	} else {
 		response, err = httpReq(req)

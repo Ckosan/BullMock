@@ -4,7 +4,6 @@ import (
 	"BullMock/parse"
 	"BullMock/utils"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -24,8 +23,14 @@ func AddMock(w http.ResponseWriter, r *http.Request) {
 	mockInfo := &parse.MockInfo{}
 	mockInstance := &parse.MockInstance{}
 	err = json.Unmarshal(bodyBytes, mockInstance)
+	w.Header().Set("Content-Type", parse.ApplicationJson)
 	if err != nil {
-		fmt.Fprintf(w, "json错误%s", string(bodyBytes))
+		errData := Data{
+			Msg:  err.Error(),
+			Code: 2001,
+		}
+		dataByte, _ := json.Marshal(errData)
+		w.Write(dataByte)
 		return
 	}
 	mockInfo.Key = mockInstance.Url + TAG + mockInstance.Method
@@ -36,6 +41,12 @@ func AddMock(w http.ResponseWriter, r *http.Request) {
 	}
 	mockInfo.Status = true
 	mockInstance.AddMock(mockInfo)
+	returnData := Data{
+		Msg:  "success",
+		Code: 2000,
+	}
+	dataByte, _ := json.Marshal(returnData)
+	w.Write(dataByte)
 }
 
 func UpdateMock(w http.ResponseWriter, r *http.Request) {
@@ -60,13 +71,13 @@ func Accept(w http.ResponseWriter, req *http.Request) {
 	method := req.Method
 	host := req.Host
 	url := req.RequestURI
-	key := host + url + TAG + method
-	mockInfo := parse.MockCollect[key]
+	key := scheme(req) + host + url + TAG + method
+	var mockInfo = parse.MockCollect[key]
 
-	if !mockInfo.Status {
+	if mockInfo == nil {
 		// 走真实请求 并返回
 		err, resp := utils.DoHttp(req)
-		if err != nil {
+		if err == nil {
 			bytes, _ := ioutil.ReadAll(resp.Body)
 			for k, v := range resp.Header {
 				w.Header().Set(k, v[0])
@@ -78,11 +89,35 @@ func Accept(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if nil != mockInfo {
+	if nil != mockInfo && mockInfo.Status {
 		w.Header().Set("Content-Type", mockInfo.RespContentType)
-		w.Write([]byte(ReturnData(mockInfo, req, bodyBytes)))
+		data, err := ReturnData(*mockInfo, req, bodyBytes)
+		if err == nil {
+			w.Write(data)
+		} else {
+			orgResp, _ := json.Marshal(mockInfo.RespTemplate)
+			w.Write(orgResp)
+		}
 		return
 	}
-	w.Write([]byte("未在mock系统定义返回"))
-	return
+	returnData := Data{
+		Msg:  "未在mock系统定义返回或开关未打开",
+		Code: 4002,
+	}
+	marshal, _ := json.Marshal(returnData)
+	w.Header().Set("Content-Type", parse.ApplicationJson)
+	w.Write(marshal)
+}
+
+type Data struct {
+	Msg  string                 `json:"msg"`
+	Code uint                   `json:"code"`
+	Data map[string]interface{} `json:"data"`
+}
+
+func scheme(req *http.Request) string {
+	if req.TLS == nil {
+		return utils.HTTP
+	}
+	return utils.HTTPS
 }
