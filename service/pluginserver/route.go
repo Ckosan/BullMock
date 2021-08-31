@@ -38,11 +38,13 @@ func (r *Route) SkipClean() bool {
 }
 
 const (
-	addMock    = "/mock/add"
-	updateMock = "/mock/update"
-	closeMock  = "/mock/close"
-	deleteMock = "/mock/delete"
-	invoke     = "/all"
+	addMock      = "/mock/add"
+	updateMock   = "/mock/update"
+	closeMock    = "/mock/close"
+	deleteMock   = "/mock/delete"
+	addScript    = "/add/Script"
+	updateScript = "/update/Script"
+	invoke       = "/all"
 )
 
 // Match matches the route against the request.
@@ -54,7 +56,9 @@ func (r *Route) Match(req *http.Request, match *RouteMatch) bool {
 	var matchErr error
 
 	// Match everything.
-	flags := req.RequestURI == addMock || req.RequestURI == updateMock || req.RequestURI == closeMock || req.RequestURI == deleteMock
+	uri := req.RequestURI
+	flags := uri == addMock || uri == updateMock ||
+		uri == closeMock || uri == deleteMock || uri == addScript || uri == updateScript
 	for _, m := range r.matchers {
 		if flags {
 			if matched := m.Match(req, match); !matched {

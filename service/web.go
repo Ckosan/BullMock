@@ -1,6 +1,7 @@
 package service
 
 import (
+	"BullMock/models"
 	"BullMock/parse"
 	"BullMock/utils"
 	"encoding/json"
@@ -47,18 +48,64 @@ func AddMock(w http.ResponseWriter, r *http.Request) {
 	}
 	dataByte, _ := json.Marshal(returnData)
 	w.Write(dataByte)
+	log.Printf("增加mock:%s成功", string(bodyBytes))
+	go func() {
+		_, err := models.GetMockIns(mockInstance.Method, mockInstance.Url)
+		if err == nil {
+			return
+		}
+		err = models.CreateMockIns(mockInstance)
+		if err != nil {
+			return
+		}
+	}()
 }
 
 func UpdateMock(w http.ResponseWriter, r *http.Request) {
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	mockInstance := &parse.MockInstance{}
+	err = json.Unmarshal(bodyBytes, mockInstance)
+	models.UpdateMockIns(mockInstance)
 	log.Println("UpdateMock")
 }
 
-func CloseMock(w http.ResponseWriter, r *http.Request) {
+func CloseMock(w http.ResponseWriter, req *http.Request) {
+	method := req.Method
+	host := req.Host
+	url := req.RequestURI
+	key := scheme(req) + host + url + TAG + method
+	var mockInfo = parse.MockCollect[key]
+	mockInfo.Status = false
+	models.UpdateMockStatus(false, method, url)
 	log.Println("CloseMock")
 }
 
 func DeleteMock(w http.ResponseWriter, r *http.Request) {
 	log.Println("DeleteMock")
+}
+
+func AddScript(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	script := models.Script{}
+	err = json.Unmarshal(bodyBytes, &script)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	models.AddScript(&script)
+}
+
+func UpScript(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func Accept(w http.ResponseWriter, req *http.Request) {
@@ -89,7 +136,7 @@ func Accept(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if nil != mockInfo && mockInfo.Status {
+	if mockInfo.Status {
 		w.Header().Set("Content-Type", mockInfo.RespContentType)
 		data, err := ReturnData(*mockInfo, req, bodyBytes)
 		if err == nil {
